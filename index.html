@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08111f">
+  <title>Wetterblick · Vorhersage</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08111f;
+      --panel: rgba(18, 34, 57, .72);
+      --panel-solid: #122239;
+      --line: rgba(180, 211, 243, .16);
+      --text: #eef6ff;
+      --muted: #9db3ca;
+      --accent: #76d4ff;
+      --accent-2: #9e8cff;
+      --danger: #ff9e9e;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .3);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 0%, rgba(96, 162, 255, .24), transparent 34rem),
+        radial-gradient(circle at 100% 100%, rgba(158, 140, 255, .18), transparent 32rem),
+        var(--bg);
+    }
+    main { width: min(1120px, calc(100% - 32px)); margin: 0 auto; padding: 38px 0 52px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+    .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .16em; font-size: .74rem; font-weight: 800; }
+    h1 { margin: 8px 0 0; font-size: clamp(2rem, 5vw, 4rem); line-height: .98; letter-spacing: -.055em; }
+    .intro { max-width: 560px; color: var(--muted); line-height: 1.6; margin: 14px 0 0; }
+    .search { display: flex; gap: 10px; min-width: min(100%, 420px); }
+    input, button { font: inherit; }
+    input {
+      flex: 1; min-width: 0; padding: 13px 15px; border: 1px solid var(--line); border-radius: 14px;
+      color: var(--text); background: rgba(255, 255, 255, .07); outline: none;
+    }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(118, 212, 255, .13); }
+    button {
+      border: 0; border-radius: 14px; padding: 13px 18px; cursor: pointer; color: #071321; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), #b1e8ff); transition: transform .18s ease, filter .18s ease;
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    button:disabled { cursor: wait; opacity: .65; transform: none; }
+    .status { min-height: 26px; color: var(--muted); margin: 0 0 12px; }
+    .status.error { color: var(--danger); }
+    .grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; }
+    .card { border: 1px solid var(--line); border-radius: 26px; background: var(--panel); box-shadow: var(--shadow); backdrop-filter: blur(18px); }
+    .current { padding: clamp(22px, 4vw, 38px); min-height: 330px; display: flex; flex-direction: column; justify-content: space-between; }
+    .location { color: var(--muted); font-size: 1rem; }
+    .current-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .temperature { font-size: clamp(5rem, 14vw, 10rem); line-height: .8; letter-spacing: -.09em; font-weight: 800; }
+    .temperature sup { font-size: .28em; vertical-align: top; letter-spacing: 0; }
+    .condition { display: flex; align-items: center; gap: 14px; text-align: right; color: var(--muted); }
+    .condition img { width: 86px; height: 86px; image-rendering: auto; }
+    .condition strong { display: block; color: var(--text); font-size: 1.15rem; margin-bottom: 6px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 26px; }
+    .metric { padding: 13px; border-radius: 16px; background: rgba(255,255,255,.055); }
+    .metric span { display: block; color: var(--muted); font-size: .78rem; margin-bottom: 6px; }
+    .metric strong { font-size: 1.05rem; }
+    .side { padding: 22px; }
+    .side h2, .forecast h2 { font-size: 1rem; margin: 0 0 16px; }
+    .sun-card { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .sun-item { padding: 18px; border-radius: 18px; background: linear-gradient(145deg, rgba(118,212,255,.12), rgba(158,140,255,.1)); }
+    .sun-item span { display: block; color: var(--muted); font-size: .8rem; margin-bottom: 8px; }
+    .sun-item strong { font-size: 1.45rem; }
+    .hint { color: var(--muted); line-height: 1.5; font-size: .9rem; margin: 22px 0 0; }
+    .forecast { padding: 24px; margin-top: 18px; }
+    .forecast-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .day { padding: 16px 12px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.045); text-align: center; }
+    .day-name { font-weight: 800; }
+    .day-date { color: var(--muted); font-size: .78rem; margin: 4px 0 8px; }
+    .day img { width: 58px; height: 58px; }
+    .day-temp { margin-top: 5px; font-weight: 800; }
+    .day-temp span { color: var(--muted); font-weight: 500; margin-left: 5px; }
+    footer { color: var(--muted); text-align: center; font-size: .8rem; margin-top: 24px; }
+    footer a { color: var(--accent); }
+    .hidden { display: none; }
+    @media (max-width: 800px) {
+      header { display: block; }
+      .search { margin-top: 22px; }
+      .grid { grid-template-columns: 1fr; }
+      .forecast-list { grid-template-columns: repeat(5, minmax(120px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+      .forecast { overflow: hidden; }
+    }
+    @media (max-width: 500px) {
+      main { width: min(100% - 20px, 1120px); padding-top: 24px; }
+      .current-main { align-items: flex-start; flex-direction: column; }
+      .condition { text-align: left; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .search { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">Wetterblick</div>
+        <h1>Dein Himmel.<br>Auf einen Blick.</h1>
+        <p class="intro">Aktuelle Wetterdaten und eine 5-Tage-Vorhersage – direkt aus <strong>wttr.in</strong>, ohne Konto und ohne Tracking.</p>
+      </div>
+      <form class="search" id="search-form" autocomplete="off">
+        <input id="location-input" aria-label="Ort" placeholder="Ort suchen, z. B. Berlin" value="Berlin">
+        <button id="search-button" type="submit">Suchen</button>
+      </form>
+    </header>
+
+    <p id="status" class="status" role="status">Bereit.</p>
+
+    <section id="weather-content" class="hidden" aria-live="polite">
+      <div class="grid">
+        <article class="card current">
+          <div class="location" id="location-name">—</div>
+          <div class="current-main">
+            <div class="temperature"><span id="current-temp">—</span><sup>°C</sup></div>
+            <div class="condition">
+              <img id="current-icon" alt="">
+              <div><strong id="current-description">—</strong><span id="feels-like">Gefühlt wie —°C</span></div>
+            </div>
+          </div>
+          <div class="metrics">
+            <div class="metric"><span>Luftfeuchte</span><strong id="humidity">—</strong></div>
+            <div class="metric"><span>Wind</span><strong id="wind">—</strong></div>
+            <div class="metric"><span>Sicht</span><strong id="visibility">—</strong></div>
+            <div class="metric"><span>Luftdruck</span><strong id="pressure">—</strong></div>
+          </div>
+        </article>
+
+        <aside class="card side">
+          <h2>Heute</h2>
+          <div class="sun-card">
+            <div class="sun-item"><span>Sonnenaufgang</span><strong id="sunrise">—</strong></div>
+            <div class="sun-item"><span>Sonnenuntergang</span><strong id="sunset">—</strong></div>
+          </div>
+          <p class="hint" id="today-summary">—</p>
+        </aside>
+      </div>
+
+      <article class="card forecast">
+        <h2>Die nächsten Tage</h2>
+        <div id="forecast-list" class="forecast-list"></div>
+      </article>
+    </section>
+
+    <footer>Datenquelle: <a href="https://wttr.in" target="_blank" rel="noreferrer">wttr.in</a> · Die Datei läuft vollständig lokal, benötigt für Wetterdaten aber eine Internetverbindung.</footer>
+  </main>
+
+  <script>
+    const form = document.querySelector('#search-form');
+    const input = document.querySelector('#location-input');
+    const button = document.querySelector('#search-button');
+    const status = document.querySelector('#status');
+    const content = document.querySelector('#weather-content');
+
+    const $ = (id) => document.getElementById(id);
+    const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const formatNumber = (value) => Number(value).toLocaleString('de-DE');
+    const weatherText = (current) => current.weatherDesc?.[0]?.value || 'Unbekannt';
+    const iconUrl = (current) => current.weatherIconUrl?.[0]?.value || '';
+
+    function setStatus(message, isError = false) {
+      status.textContent = message;
+      status.classList.toggle('error', isError);
+    }
+
+    function renderCurrent(data) {
+      const current = data.current_condition[0];
+      const area = data.nearest_area?.[0];
+      const location = [area?.areaName?.[0]?.value, area?.region?.[0]?.value, area?.country?.[0]?.value]
+        .filter(Boolean).filter((value, index, values) => values.indexOf(value) === index).join(', ');
+      const today = data.weather[0];
+
+      $('location-name').textContent = location || 'Unbekannter Ort';
+      $('current-temp').textContent = current.temp_C;
+      $('current-icon').src = iconUrl(current);
+      $('current-icon').alt = weatherText(current);
+      $('current-description').textContent = weatherText(current);
+      $('feels-like').textContent = `Gefühlt wie ${current.FeelsLikeC}°C`;
+      $('humidity').textContent = `${current.humidity}%`;
+      $('wind').textContent = `${current.windspeedKmph} km/h`;
+      $('visibility').textContent = `${current.visibility} km`;
+      $('pressure').textContent = `${formatNumber(current.pressure)} hPa`;
+      $('sunrise').textContent = today.astronomy?.[0]?.sunrise || '—';
+      $('sunset').textContent = today.astronomy?.[0]?.sunset || '—';
+      $('today-summary').textContent = `${today.mintempC}–${today.maxtempC}°C heute. ${today.hourly?.[4]?.weatherDesc?.[0]?.value || weatherText(current)}.`;
+    }
+
+    function renderForecast(data) {
+      $('forecast-list').innerHTML = data.weather.slice(0, 5).map((day) => {
+        const date = new Date(`${day.date}T12:00:00`);
+        const midday = day.hourly?.find((hour) => hour.time === '1200') || day.hourly?.[4] || {};
+        return `<div class="day">
+          <div class="day-name">${dayNames[date.getDay()]}</div>
+          <div class="day-date">${date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</div>
+          <img src="${iconUrl(midday)}" alt="${weatherText(midday)}" loading="lazy">
+          <div class="day-temp">${day.maxtempC}° <span>${day.mintempC}°</span></div>
+        </div>`;
+      }).join('');
+    }
+
+    async function loadWeather(location) {
+      const trimmed = location.trim();
+      if (!trimmed) return;
+      button.disabled = true;
+      setStatus(`Wetter für „${trimmed}“ wird geladen …`);
+      try {
+        const response = await fetch(`https://wttr.in/${encodeURIComponent(trimmed)}?format=j1`, {
+          headers: { Accept: 'application/json' }
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        if (!data.current_condition?.length || !data.weather?.length) throw new Error('Keine Wetterdaten gefunden');
+        renderCurrent(data);
+        renderForecast(data);
+        content.classList.remove('hidden');
+        setStatus(`Zuletzt aktualisiert: ${new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`);
+      } catch (error) {
+        content.classList.add('hidden');
+        setStatus('Die Wetterdaten konnten nicht geladen werden. Prüfe den Ort und deine Internetverbindung.', true);
+        console.error(error);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      loadWeather(input.value);
+    });
+
+    loadWeather(input.value);
+  </script>
+</body>
+</html>
